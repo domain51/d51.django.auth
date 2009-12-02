@@ -37,3 +37,10 @@ class FacebookConnectBackend(object):
         user.save()
         return user
 
+    # TODO: this should be in a generic super-class
+    def get_user(self, user_id):
+        try:
+            return self.user_manager.get(pk=user_id)
+        except self.user_manager.model.DoesNotExist:
+            return None
+

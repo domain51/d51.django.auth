@@ -194,3 +194,25 @@ class TestOfFacebookConnectBackend(TestCase):
 
         verify_all(user, req, facebook, fb_manager)
 
+    def test_provides_expected_get_user_functionality(self):
+        user_id = random(10, 100)
+        user = mox.MockObject(User)
+        user_manager = mox.MockObject(UserManager)
+        user_manager.get(pk = user_id).AndReturn(user)
+        replay_all(user, user_manager)
+
+        auth = FacebookConnectBackend(user_manager=user_manager)
+        self.assertEqual(user, auth.get_user(user_id))
+        verify_all(user, user_manager)
+
+    def test_returns_none_if_no_user_is_found(self):
+        user_id = random(10, 100)
+        user_manager = mox.MockObject(UserManager)
+        user_manager.model = User
+        user_manager.get(pk=user_id).AndRaise(User.DoesNotExist)
+        replay_all(user_manager)
+
+        auth = FacebookConnectBackend(user_manager=user_manager)
+        self.assertEqual(None, auth.get_user(user_id))
+        verify_all(user_manager)
+
