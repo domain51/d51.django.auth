@@ -1,7 +1,7 @@
 from django.contrib.auth.backends import ModelBackend
 from django.contrib.auth.models import User
 from django.test import TestCase
-from d51.django.auth.emailonly import EmailOnlyBackend
+from d51.django.auth.emailonly.backends import EmailOnlyBackend
 
 __all__ = [
     'TestOfEmailOnlyAuthentication',
