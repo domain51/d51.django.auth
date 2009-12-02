@@ -1,12 +1,12 @@
+from d51.django.auth.backends import AbstractModelAuthBackend
 from d51.django.auth.facebook.models import FacebookID
-from django.contrib.auth.models import User
 
 FACEBOOK_CONNECT_BACKEND_STRING = 'd51.django.auth.facebook.backends.FacebookConnectBackend'
 
-class FacebookConnectBackend(object):
-    def __init__(self, manager=FacebookID.objects, user_manager=User.objects):
+class FacebookConnectBackend(AbstractModelAuthBackend):
+    def __init__(self, manager=FacebookID.objects, **kwargs):
+        super(FacebookConnectBackend, self).__init__(**kwargs)
         self.manager = manager
-        self.user_manager = user_manager
 
     def authenticate(self, **kwargs):
         if not 'request' in kwargs:
@@ -36,11 +36,4 @@ class FacebookConnectBackend(object):
         user.set_unusable_password()
         user.save()
         return user
-
-    # TODO: this should be in a generic super-class
-    def get_user(self, user_id):
-        try:
-            return self.user_manager.get(pk=user_id)
-        except self.user_manager.model.DoesNotExist:
-            return None
 
