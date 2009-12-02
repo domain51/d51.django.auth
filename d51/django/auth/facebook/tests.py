@@ -127,6 +127,7 @@ class TestOfFacebookConnectBackend(TestCase):
         username = 'fb$%d' % random_id
 
         user = mox.MockObject(User)
+        user.is_authenticated().AndReturn(False)
         user.username = username
         user.set_unusable_password()
         user.save()
@@ -162,4 +163,34 @@ class TestOfFacebookConnectBackend(TestCase):
         self.assertTrue(isinstance(new_user, User))
 
         verify_all(user, user_manager, req, facebook, facebook.users, fb_id, fb_manager)
+
+    def test_creates_new_fb_id_for_existing_user(self):
+        random_id = random(10, 100)
+        username = 'fb$%d' % random_id
+
+        user = mox.MockObject(User)
+        user.is_authenticated().AndReturn(True)
+
+        fb_id = mox.MockObject(FacebookID)
+        fb_id.user = user
+
+        req = mox.MockObject(HttpRequest)
+        req.user = user
+        facebook = mox.MockObject(Facebook)
+        facebook.check_session(req).AndReturn(True)
+        facebook.uid = random_id
+        req.facebook = facebook
+
+        fb_manager = mox.MockObject(FacebookIDManager)
+        fb_manager.get_uid(random_id).AndRaise(FacebookID.DoesNotExist())
+        fb_manager.model = FacebookID
+        fb_manager.create(pk=random_id, user=user).AndReturn(fb_id)
+
+        replay_all(user, req, facebook, fb_manager)
+
+        auth = FacebookConnectBackend(manager=fb_manager)
+        new_user = auth.authenticate(request=req)
+        self.assertEqual(new_user, user)
+
+        verify_all(user, req, facebook, fb_manager)
 
