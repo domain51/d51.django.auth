@@ -7,7 +7,7 @@ from django.shortcuts import redirect
 from .. facebook import FacebookError
 
 def _do_logout_redirect(redirect_to):
-    response = redirect('d51_django_auth.facebook.views.logout')
+    response = redirect('d51.django.auth.facebook.views.logout')
     response['Location'] += '?next=%s' % redirect_to
     return response
 
