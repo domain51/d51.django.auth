@@ -216,3 +216,46 @@ class TestOfFacebookConnectBackend(TestCase):
         self.assertEqual(None, auth.get_user(user_id))
         verify_all(user_manager)
 
+    def test_handles_string_for_facebook_uid_for_creation(self):
+        random_id = str(random(10, 100))
+        username = 'fb$%s' % random_id
+
+        user = mox.MockObject(User)
+        user.is_authenticated().AndReturn(False)
+        user.username = username
+        user.set_unusable_password()
+        user.save()
+
+        user_manager = mox.MockObject(UserManager)
+        user_manager.create(
+            username=username,
+            first_name='Bob',
+            last_name='Example'
+        ).AndReturn(user)
+
+        fb_id = mox.MockObject(FacebookID)
+        fb_id.user = user
+
+        fb_manager = mox.MockObject(FacebookIDManager)
+        fb_manager.model = FacebookID
+        fb_manager.get_uid(random_id).AndRaise(FacebookID.DoesNotExist())
+        fb_manager.create(pk = random_id, user = user).AndReturn(fb_id)
+
+        req = mox.MockObject(HttpRequest)
+        req.user = user
+        facebook = mox.MockObject(Facebook)
+        facebook.check_session(req).AndReturn(True)
+        facebook.uid = random_id
+        facebook.users = mox.MockObject(StubUserProxy)
+        facebook.users.getInfo([random_id], ['name']).AndReturn([{"name": "Bob Example"}])
+        req.facebook = facebook
+
+        replay_all(user, user_manager, req, facebook, facebook.users, fb_id, fb_manager)
+
+        auth = FacebookConnectBackend(manager=fb_manager, user_manager=user_manager)
+        new_user = auth.authenticate(request = req)
+        self.assertTrue(isinstance(new_user, User))
+
+        verify_all(user, user_manager, req, facebook, facebook.users, fb_id, fb_manager)
+
+

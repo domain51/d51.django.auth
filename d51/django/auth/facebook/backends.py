@@ -21,7 +21,6 @@ class FacebookConnectBackend(AbstractModelAuthBackend):
         except self.manager.model.DoesNotExist:
             user = request.user.is_authenticated() and request.user or self._create_new_user(request)
             fb_id = self.manager.create(pk=request.facebook.uid, user=user)
-
         user.backend = FACEBOOK_CONNECT_BACKEND_STRING
         return user
 
@@ -29,7 +28,7 @@ class FacebookConnectBackend(AbstractModelAuthBackend):
         user_info = request.facebook.users.getInfo([request.facebook.uid], ['name'])[0]
         user_name = user_info['name'].split(' ')
         user = self.user_manager.create(
-            username='fb$%d' % request.facebook.uid,
+            username='fb$%s' % request.facebook.uid,
             first_name=user_name[0],
             last_name=user_name[1]
         )
