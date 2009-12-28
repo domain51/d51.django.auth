@@ -5,6 +5,7 @@ from django.shortcuts import redirect
 # match.  Doing "from facebook import" here causes Python to stop as soon as
 # it gets to d51.django.auth.facebook.
 from .. facebook import FacebookError
+from facebook.models import FacebookID
 
 def _do_logout_redirect(redirect_to):
     response = redirect('d51.django.auth.facebook.views.logout')
@@ -33,7 +34,10 @@ def is_fully_authenticated(request):
 
 # TODO: move this into the d51.django.auth.facebook portion of the code
 def is_facebook_user(user):
-    return getattr(user, 'facebook', False)
+    try:
+        return getattr(user, 'facebook', False)
+    except FacebookID.DoesNotExist:
+        return False
 
 def auth_required(redirect_to = '/'):
     def decorator(view):
