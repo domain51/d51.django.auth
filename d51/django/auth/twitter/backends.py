@@ -12,7 +12,8 @@ class TwitterBackend(AbstractModelAuthBackend):
         self._consumer_key, self._consumer_secret = get_key_and_secret(django_settings)
         super(TwitterBackend, self).__init__(*args, **kwargs)
 
-    def authenticate(self, request, *args, **kwargs):
+    def authenticate(self, **credentials):
+        request = credentials.get('request', None)
         if request is None:
             return
 
@@ -22,22 +23,23 @@ class TwitterBackend(AbstractModelAuthBackend):
 
         tweb = get_twitter_http()
         tweb.token = request_token
-        tweb.fetch_access_token()
+        access_token = tweb.fetch_access_token()
+        tweb.add_credentials(tweb.consumer, access_token, 'twitter.com')
 
         api = get_twitter_api(tweb)
-        credentials = api.account.verify_credentials()
+        user_info = api.account.verify_credentials()
 
         user = None
         try:
-            ttoken = self.manager.get(uid=credentials.id)
+            ttoken = self.manager.get(uid=user_info['id'])
             ttoken.key = tweb.token.key
             ttoken.secret = tweb.token.secret
             ttoken.save()
             user = ttoken.user
         except TwitterToken.DoesNotExist:
-            username = 'tw$%s' % credentials.id
-            name = credentials.name.split(' ', 1) + [""]
-            user = self.user_manager.create(
+            username = 'tw$%s' % user_info['id']
+            name = user_info['name'].split(' ', 1) + [""]
+            user, created = self.user_manager.get_or_create(
                                 username=username,
                                 first_name=name[0],
                                 last_name=name[1],
@@ -45,7 +47,7 @@ class TwitterBackend(AbstractModelAuthBackend):
             user.set_unusable_password()
             user.save()
             self.manager.create(
-                uid=credentials.id,
+                uid=user_info['id'],
                 user=user,
                 key=tweb.token.key,
                 secret=tweb.token.secret,

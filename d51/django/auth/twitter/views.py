@@ -29,7 +29,7 @@ def login(request):
     """
     # TODO: check for an existing TwitterToken first
 
-    user = auth.authenticate(request)
+    user = auth.authenticate(**{'request':request})
 
     if not user is None:
         auth.login(request, user)
