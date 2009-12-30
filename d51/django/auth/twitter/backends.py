@@ -21,15 +21,21 @@ class TwitterBackend(AbstractModelAuthBackend):
         if api is None:
             return
 
-        user_info = api.account.verify_credentials()
-
-        user = None
+        # guard against anything bubbling up through Dolt
         try:
-            user = self.get_existing_user(user_info, token)
-        except TwitterToken.DoesNotExist:
-            user = self.create_new_user(user_info, token)
-        return user
-
+            user_info = api.account.verify_credentials()
+            # guard against errors bubbling up from the twitter response itself
+            try:
+                user = None
+                try:
+                    user = self.get_existing_user(user_info, token)
+                except TwitterToken.DoesNotExist:
+                    user = self.create_new_user(user_info, token)
+                return user
+            except KeyError:
+                return None
+        except:
+            return None 
     def get_existing_user(self, twitter_info, token):
         ttoken = self.manager.get(uid=twitter_info['id'])
         ttoken.key, ttoken.secret = token.key, token.secret
