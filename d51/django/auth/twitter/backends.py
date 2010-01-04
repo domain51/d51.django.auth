@@ -16,60 +16,51 @@ class TwitterBackend(AbstractModelAuthBackend):
         if request is None:
             return
 
-        api, token = self.setup_api_and_token(request) 
-
-        if api is None:
+        self.setup_api_and_token(request)
+        if self.api is None:
             return
 
         # guard against anything bubbling up through Dolt
         try:
-            user_info = api.account.verify_credentials()
+            user_info = self.api.account.verify_credentials()
             # guard against errors bubbling up from the twitter response itself
             try:
                 user = None
                 try:
-                    user = self.get_existing_user(user_info, token)
+                    twitter_token = self.manager.get_uid(user_info['id'])
+                    self.update_existing_token(twitter_token, self.token)
+                    user = twitter_token.user
                 except TwitterToken.DoesNotExist:
-                    user = self.create_new_user(user_info, token)
+                    user = self.manager.create_new_twitter_user(user_info, self.token, self.user_manager)
                 return user
             except KeyError:
                 return None
         except:
             return None 
-    def get_existing_user(self, twitter_info, token):
-        ttoken = self.manager.get(uid=twitter_info['id'])
-        ttoken.key, ttoken.secret = token.key, token.secret
-        ttoken.save()
-        return ttoken.user
-
-    def create_new_user(self, twitter_info, token):
-        username = 'tw$%s' % twitter_info['id']
-        name = twitter_info['name'].split(' ', 1) + [""]
-        user, created = self.user_manager.get_or_create(
-                            username=username,
-                            first_name=name[0],
-                            last_name=name[1],
-        )
-        user.set_unusable_password()
-        user.save()
-        self.manager.create(
-            uid=twitter_info['id'],
-            user=user,
-            key=token.key,
-            secret=token.secret,
-        )
-        return user
 
     def get_http(self):
         return get_twitter_http()
+    
+    def get_api(authorized_http):
+        return get_twitter_api(authorized_http)
+
+    def get_request_token(self, request):
+        request_token = request.session.get(TWITTER_SESSION_KEY, None)
+        return request_token
+
+    def authorize_http(self, http, request_token):
+        http = self.get_http()
+        http.token = request_token
+        access_token = http.fetch_access_token()
+        http.add_credentials(http.consumer, access_token, 'twitter.com')
+        return http
 
     def setup_api_and_token(self, request):
-        request_token = request.session.get(TWITTER_SESSION_KEY, None)
-        if request_token is None:
-            return None
+        request_token = self.get_request_token(request)
+        http = self.get_http()
+        http = self.authorize_http(http)
+        self.api, self.token = self.get_api(http), http.token    
 
-        tweb = self.get_http()
-        tweb.token = request_token
-        access_token = tweb.fetch_access_token()
-        tweb.add_credentials(tweb.consumer, access_token, 'twitter.com')
-        return get_twitter_api(tweb), tweb.token 
+    def update_existing_token(self, twitter_token, token):
+        twitter_token.key, twitter_token.secret = token.key, token.secret
+        twitter_token.save()
