@@ -16,32 +16,31 @@ class TwitterBackend(AbstractModelAuthBackend):
         if request is None:
             return
 
-        self.setup_api_and_token(request)
-        if self.api is None:
-            return
-
         # guard against anything bubbling up through Dolt
         try:
+            self.setup_api_and_token(request)
+            if self.api is None:
+                return
+
             user_info = self.api.account.verify_credentials()
             # guard against errors bubbling up from the twitter response itself
             try:
-                user = None
+                twitter_token = None
                 try:
                     twitter_token = self.manager.get_uid(user_info['id'])
                     self.update_existing_token(twitter_token, self.token)
-                    user = twitter_token.user
                 except TwitterToken.DoesNotExist:
-                    user = self.manager.create_new_twitter_user(user_info, self.token, self.user_manager)
-                return user
-            except KeyError:
+                    twitter_token = self.manager.create_new_twitter_user(user_info, self.token, self.user_manager)
+                return twitter_token.user
+            except KeyError as e:
                 return None
-        except:
+        except Exception as e:
             return None 
 
     def get_http(self):
         return get_twitter_http()
     
-    def get_api(authorized_http):
+    def get_api(self, authorized_http):
         return get_twitter_api(authorized_http)
 
     def get_request_token(self, request):
@@ -49,7 +48,6 @@ class TwitterBackend(AbstractModelAuthBackend):
         return request_token
 
     def authorize_http(self, http, request_token):
-        http = self.get_http()
         http.token = request_token
         access_token = http.fetch_access_token()
         http.add_credentials(http.consumer, access_token, 'twitter.com')
@@ -58,7 +56,7 @@ class TwitterBackend(AbstractModelAuthBackend):
     def setup_api_and_token(self, request):
         request_token = self.get_request_token(request)
         http = self.get_http()
-        http = self.authorize_http(http)
+        http = self.authorize_http(http, request_token)
         self.api, self.token = self.get_api(http), http.token    
 
     def update_existing_token(self, twitter_token, token):
