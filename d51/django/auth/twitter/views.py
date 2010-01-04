@@ -14,7 +14,7 @@ def initiate_login(request, redirect_field_name = auth.REDIRECT_FIELD_NAME):
     return redirect(authorization_url)
 
 def login(request):
-    user = auth.authenticate(**{'request':request})
+    user = auth.authenticate(request=request)
     if user:
         auth.login(request, user)
     return HttpResponseRedirect(request.session[TWITTER_SESSION_REDIRECT])
