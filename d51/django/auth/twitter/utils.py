@@ -22,4 +22,5 @@ def get_twitter_http():
     return twitter
 
 def get_twitter_api(http):
+    http.add_credentials(http.consumer, http.token, 'twitter.com')
     return DoltTwitter(http)

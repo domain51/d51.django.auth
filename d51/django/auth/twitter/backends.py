@@ -50,7 +50,7 @@ class TwitterBackend(AbstractModelAuthBackend):
     def authorize_http(self, http, request_token):
         http.token = request_token
         access_token = http.fetch_access_token()
-        http.add_credentials(http.consumer, access_token, 'twitter.com')
+        http.token = access_token
         return http
 
     def setup_api_and_token(self, request):
