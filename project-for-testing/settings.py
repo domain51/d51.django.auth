@@ -46,12 +46,15 @@ ROOT_URLCONF = 'project.urls'
 
 
 INSTALLED_APPS = (
+    'south',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.admin',
     'd51.django.auth.auth_tests', # only needed if you want to run all tests
     'd51.django.auth.emailonly',
+    'd51.django.auth.facebook',
+    'd51.django.auth.twitter',
 )
 
 TEMPLATE_LOADERS = (
@@ -63,4 +66,7 @@ TEMPLATE_DIRS = (
     os.path.join(os.path.dirname(__file__), "templates"),
 )
 
-
+D51_DJANGO_AUTH = {
+    'TWITTER_CONSUMER_KEY':'',
+    'TWITTER_CONSUMER_SECRET':'',
+}

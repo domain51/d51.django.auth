@@ -27,35 +27,31 @@ class TestOfTwitterViews(TestCase):
             "should redirect to %s" % expected_url
         )
 
-class TestOfTwitterBackend(TestCase):
-    def test_get_existing_user(self):
-        user = User.objects.create(username='exists')
-        ttoken = TwitterToken.objects.create(user=user, key='', secret='', uid=1)
-        backend = TwitterBackend()
-        token = OAuthToken('key', 'secret')
-        backend_user = backend.get_existing_user({'id':1},token)
-        self.assertEqual(backend_user, user)
-        self.assertEqual(backend_user.twittertoken.key, token.key)
-        self.assertEqual(backend_user.twittertoken.secret, token.secret)
-        self.assertRaises(TwitterToken.DoesNotExist, backend.get_existing_user, {'id':2}, token)
-        user.delete()
-
+class TestOfTwitterManager(TestCase):
     def test_create_new_user(self):
         twitter_info = {
             'name':'chris dickinson',
             'id':'1010101',
         }
-        token = OAuthToken('key', 'secret')
-        backend = TwitterBackend()
-
-        user = backend.create_new_user(twitter_info, token)
+        user = TwitterToken.objects.create_new_user(twitter_info, User.objects)
         self.assertTrue(isinstance(user, User))
-        self.assertEqual(user.twittertoken.key, token.key)
-        self.assertEqual(user.twittertoken.secret, token.secret)
         self.assertEqual(user.password, UNUSABLE_PASSWORD)
         self.assertEqual(user.first_name, 'chris')
         self.assertEqual(user.last_name, 'dickinson')
         self.assertTrue(user.username.startswith('tw$'))
+
+class TestOfTwitterBackend(TestCase):
+    def test_update_existing_token(self):
+        user = User.objects.create(username='exists')
+        ttoken = TwitterToken.objects.create(user=user, key='', secret='', uid=1)
+        backend = TwitterBackend()
+        token = OAuthToken('key', 'secret')
+        backend.update_existing_token(ttoken,token)
+
+        self.assertEqual(ttoken.key, token.key)
+        self.assertEqual(ttoken.secret, token.secret)
+        user.delete()
+
 
     def test_setup_api_and_token(self):
         class FakeRequest(object):
@@ -82,41 +78,10 @@ class TestOfTwitterBackend(TestCase):
         self.assertEqual(fake_backend.setup_api_and_token(bad_request), None)
 
         good_request = bad_request; good_request.session[TWITTER_SESSION_KEY] = OAuthToken('key', 'secret')
-        dolt, token = fake_backend.setup_api_and_token(good_request)
-
+        fake_backend.setup_api_and_token(good_request)
+        dolt, token = fake_backend.api, fake_backend.token
+ 
         self.assertTrue(isinstance(dolt, Dolt))
         self.assertTrue(isinstance(token, OAuthToken))
         self.assertTrue(triggers['fetch_access_token'])
         self.assertTrue(triggers['add_credentials'])
-
-    def test_authenticate(self):
-        class FakeApi(object):
-            def __getattr__(self, name):
-                return self
-            def __call__(self):
-                return self
-
-        gary_busey = User.objects.create(username='Gary Busey')
-        lary_goosy = User.objects.create(username='Lary Goosy')
-        class FakeBackend(TwitterBackend):
-            def __init__(self, find_token, *args, **kwargs):
-                self.find_token = find_token
-                return super(FakeBackend, self).__init__(*args,**kwargs)
-            def setup_api_and_token(self, *args, **kwargs):
-                return FakeApi(), OAuthToken('key', 'secret')
-            def get_existing_user(self, *args, **kwargs):
-                if self.find_token:
-                    return gary_busey
-                else:
-                    raise TwitterToken.DoesNotExist()
-            def create_new_user(self, *args, **kwargs):
-                return lary_goosy
-
-        backend = FakeBackend(True)
-        results = backend.authenticate(**{'request':object()})
-        self.assertEqual(results, gary_busey)
-
-        backend = FakeBackend(False)
-        results = backend.authenticate(**{'request':object()})
-        self.assertEqual(results, lary_goosy)
-

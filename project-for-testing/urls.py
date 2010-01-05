@@ -10,6 +10,7 @@ urlpatterns = patterns(
     '',
     (r'^admin/(.*)', admin.site.root),
     (r'^accounts/login/$', 'django.contrib.auth.views.login'),
+    (r'^twitter/', include('d51.django.auth.twitter.urls')),
 )
 
 if settings.DEBUG:
