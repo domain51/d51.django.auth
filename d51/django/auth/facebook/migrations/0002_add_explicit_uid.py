@@ -6,24 +6,12 @@ from d51.django.auth.facebook.models import *
 class Migration:
     
     def forwards(self, orm):
+        db.rename_column('facebook_facebookid', 'id', 'uid')
+        db.alter_column('facebook_facebookid', 'uid', models.PositiveIntegerField(primary_key=True))
         
-        # Adding field 'FacebookID.uid'
-        db.add_column('facebook_facebookid', 'uid', models.PositiveIntegerField(primary_key=True))
-        
-        # Deleting field 'FacebookID.id'
-        db.delete_column('facebook_facebookid', 'id')
-        
-    
-    
     def backwards(self, orm):
-        
-        # Deleting field 'FacebookID.uid'
-        db.delete_column('facebook_facebookid', 'uid')
-        
-        # Adding field 'FacebookID.id'
+        db.rename_column('facebook_facebookid', 'uid', 'id')
         db.add_column('facebook_facebookid', 'id', models.AutoField(primary_key=True))
-        
-    
     
     models = {
         'auth.user': {
