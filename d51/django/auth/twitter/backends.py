@@ -18,8 +18,9 @@ class TwitterBackend(AbstractModelAuthBackend):
 
         user = None
         try:
+            import ipdb; ipdb.set_trace()
             self.setup_api_and_token(request)
-            user = self.get_user()
+            user = self.get_twitter_user()
         except Exception as e:
             user = None 
         return user
@@ -46,7 +47,7 @@ class TwitterBackend(AbstractModelAuthBackend):
         http = self.authorize_http(http, request_token)
         self.api, self.token = self.get_api(http), http.token    
 
-    def get_user(self, user_info):
+    def get_twitter_user(self):
         user_info = self.api.account.verify_credentials()
         twitter_token = None
         try:
