@@ -2,7 +2,7 @@ from d51.django.auth.backends import AbstractModelAuthBackend
 from django.conf import settings as django_settings
 from django.contrib.auth.models import User
 from .models import TwitterToken
-from .utils import TWITTER_SESSION_KEY, get_twitter_http, get_twitter_api
+from .utils import TWITTER_SESSION_KEY, get_twitter_http, get_twitter_api, create_new_user
 
 TWITTER_BACKEND_STRING = 'd51.django.auth.facebook.backends.TwitterBackend'
 
@@ -51,11 +51,8 @@ class TwitterBackend(AbstractModelAuthBackend):
         twitter_token = None
         try:
             twitter_token = self.manager.get_uid(user_info['id'])
-            self.update_existing_token(twitter_token, self.token)
+            twitter_token.update_from_oauth_token(self.token)
         except TwitterToken.DoesNotExist:
-            twitter_token = self.manager.create_new_twitter_user(user_info, self.token, self.user_manager)
+            user = create_new_user(user_manager=self.user_manager, **user_info)
+            twitter_token = self.manager.create_new_twitter_token(user, user_info['id'], self.token)
         return twitter_token.user
-
-    def update_existing_token(self, twitter_token, token):
-        twitter_token.key, twitter_token.secret = token.key, token.secret
-        twitter_token.save()

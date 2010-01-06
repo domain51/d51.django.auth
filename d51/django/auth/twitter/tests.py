@@ -6,7 +6,7 @@ from django.core.urlresolvers import reverse
 from d51.django.auth.twitter.backends import TwitterBackend
 from dolt import Dolt
 from random import randint as random
-from .utils import TWITTER_SESSION_KEY, TWITTER_SESSION_REDIRECT, TwitterHttp
+from .utils import TWITTER_SESSION_KEY, TWITTER_SESSION_REDIRECT, TwitterHttp, create_new_user
 from .models import TwitterToken
 from oauth.oauth import OAuthToken
 
@@ -27,13 +27,13 @@ class TestOfTwitterViews(TestCase):
             "should redirect to %s" % expected_url
         )
 
-class TestOfTwitterManager(TestCase):
+class TestOfTwitterUtils(TestCase):
     def test_create_new_user(self):
         twitter_info = {
             'name':'chris dickinson',
             'id':'1010101',
         }
-        user = TwitterToken.objects.create_new_user(twitter_info, User.objects)
+        user = create_new_user(user_manager=User.objects, **twitter_info)
         self.assertTrue(isinstance(user, User))
         self.assertEqual(user.password, UNUSABLE_PASSWORD)
         self.assertEqual(user.first_name, 'chris')
@@ -41,18 +41,6 @@ class TestOfTwitterManager(TestCase):
         self.assertTrue(user.username.startswith('tw$'))
 
 class TestOfTwitterBackend(TestCase):
-    def test_update_existing_token(self):
-        user = User.objects.create(username='exists')
-        ttoken = TwitterToken.objects.create(user=user, key='', secret='', uid=1)
-        backend = TwitterBackend()
-        token = OAuthToken('key', 'secret')
-        backend.update_existing_token(ttoken,token)
-
-        self.assertEqual(ttoken.key, token.key)
-        self.assertEqual(ttoken.secret, token.secret)
-        user.delete()
-
-
     def test_setup_api_and_token(self):
         class FakeRequest(object):
             session = { 
@@ -108,5 +96,47 @@ class TestOfTwitterBackend(TestCase):
         http_out = backend.authorize_http(http, token)
         self.assertEqual(http_out.token, 'token-fetched')
 
+    def test_get_existing_twitter_user(self):
+        user = create_new_user('101', 'chris dickinson')
+        twitter_token = TwitterToken.objects.create_new_twitter_token(user, '101', OAuthToken('key', 'secret'))
+        class MockDolt(object):
+            def __getattr__(self, what):
+                return self
 
+            def __call__(self):
+                return {
+                    'id':'101',
+                    'name':'chris dickinson',
+                }
+        class MockBackend(TwitterBackend):
+            api = MockDolt()
+            token = OAuthToken('new-key', 'new-secret')
+
+        backend = MockBackend()
+        user_from_backend = backend.get_twitter_user()
+        self.assertEqual(user_from_backend.id, user.id)
+        self.assertEqual(user_from_backend.twitter.key, 'new-key')
+        self.assertEqual(user_from_backend.twitter.secret, 'new-secret')
+
+    def test_get_new_twitter_user(self):
+        class MockDolt(object):
+            def __getattr__(self, what):
+                return self
+            def __call__(self):
+                return {
+                    'id':'102',
+                    'name':'chris',
+                }
+        class MockBackend(TwitterBackend):
+            api = MockDolt()
+            token = OAuthToken('key', 'secret')
+
+        backend = MockBackend()
+        user = backend.get_twitter_user()
+        self.assertEqual(user.first_name, 'chris')
+        self.assertEqual(user.last_name, '')
+        self.assertEqual(user.username, 'tw$102')
+        self.assertEqual(user.password, UNUSABLE_PASSWORD)
+        self.assertEqual(user.twitter.key, 'key')
+        self.assertEqual(user.twitter.secret, 'secret')
 

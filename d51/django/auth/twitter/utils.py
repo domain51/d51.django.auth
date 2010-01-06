@@ -2,6 +2,7 @@ from oauth.oauth import OAuthConsumer, OAuthToken
 from oauthclient.twitter import TwitterHttp
 from django.conf import settings as django_settings
 from dolt.apis.twitter import Twitter as DoltTwitter
+from django.contrib.auth.models import User, UNUSABLE_PASSWORD
 
 TWITTER_SESSION_KEY = 'twitter_request_token'
 TWITTER_SESSION_REDIRECT = 'redirect_to'
@@ -24,3 +25,13 @@ def get_twitter_http():
 def get_twitter_api(http):
     http.add_credentials(http.consumer, http.token, 'twitter.com')
     return DoltTwitter(http)
+
+def create_new_user(id, name, user_manager=User.objects, *args, **kwargs):
+    username = 'tw$%s'%id
+    name = name.split(' ',1)+['']
+    return user_manager.create(
+                username=username,
+                first_name=name[0],
+                last_name=name[1],
+                password=UNUSABLE_PASSWORD
+    )

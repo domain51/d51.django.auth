@@ -14,3 +14,7 @@ class TwitterToken(models.Model):
 
     def get_oauth_token(self):
         return OAuthToken(self.key, self.secret)
+
+    def update_from_oauth_token(self, token):
+        self.key, self.secret = token.key, token.secret
+        self.save()
