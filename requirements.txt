@@ -1,0 +1,4 @@
+Django
+mox
+-e git://github.com/sciyoshi/pyfacebook.git#egg=pyfacebook
+-e git://github.com/tswicegood/Dolt.git#egg=Dolt
