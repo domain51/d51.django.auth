@@ -85,3 +85,28 @@ class TestOfTwitterBackend(TestCase):
         self.assertTrue(isinstance(token, OAuthToken))
         self.assertTrue(triggers['fetch_access_token'])
         self.assertTrue(triggers['add_credentials'])
+
+    def test_get_api(self):
+        triggers = { 'add_credentials': False }
+        class MockHttp(object):
+            consumer = None
+            token = None
+            def add_credentials(self, *args, **kwargs):
+                triggers['add_credentials'] = True
+        http = MockHttp()
+        backend = TwitterBackend()
+        self.assertTrue(isinstance(backend.get_api(http), Dolt))
+        self.assertTrue(triggers['add_credentials'])
+
+    def test_authorize_http(self):
+        class MockHttp(object):
+            def fetch_access_token(self):
+                return self.token + '-fetched' 
+        backend = TwitterBackend()
+        http = MockHttp()
+        token = 'token'
+        http_out = backend.authorize_http(http, token)
+        self.assertEqual(http_out.token, 'token-fetched')
+
+
+

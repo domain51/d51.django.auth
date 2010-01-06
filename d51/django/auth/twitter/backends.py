@@ -16,26 +16,13 @@ class TwitterBackend(AbstractModelAuthBackend):
         if request is None:
             return
 
-        # guard against anything bubbling up through Dolt
+        user = None
         try:
             self.setup_api_and_token(request)
-            if self.api is None:
-                return
-
-            user_info = self.api.account.verify_credentials()
-            # guard against errors bubbling up from the twitter response itself
-            try:
-                twitter_token = None
-                try:
-                    twitter_token = self.manager.get_uid(user_info['id'])
-                    self.update_existing_token(twitter_token, self.token)
-                except TwitterToken.DoesNotExist:
-                    twitter_token = self.manager.create_new_twitter_user(user_info, self.token, self.user_manager)
-                return twitter_token.user
-            except KeyError as e:
-                return None
+            user = self.get_user()
         except Exception as e:
-            return None 
+            user = None 
+        return user
 
     def get_http(self):
         return get_twitter_http()
@@ -58,6 +45,16 @@ class TwitterBackend(AbstractModelAuthBackend):
         http = self.get_http()
         http = self.authorize_http(http, request_token)
         self.api, self.token = self.get_api(http), http.token    
+
+    def get_user(self, user_info):
+        user_info = self.api.account.verify_credentials()
+        twitter_token = None
+        try:
+            twitter_token = self.manager.get_uid(user_info['id'])
+            self.update_existing_token(twitter_token, self.token)
+        except TwitterToken.DoesNotExist:
+            twitter_token = self.manager.create_new_twitter_user(user_info, self.token, self.user_manager)
+        return twitter_token.user
 
     def update_existing_token(self, twitter_token, token):
         twitter_token.key, twitter_token.secret = token.key, token.secret
