@@ -27,6 +27,14 @@ class TestOfTwitterViews(TestCase):
             "should redirect to %s" % expected_url
         )
 
+class TestOfTwitterModels(TestCase):
+    def test_get_oauth_token(self):
+        twitter_token = TwitterToken.objects.create(user=create_new_user('100', 'chris dickinson'), key='key', secret='secret', uid='100')
+        oauth_token = twitter_token.get_oauth_token()
+        self.assertTrue(isinstance(oauth_token, OAuthToken))
+        self.assertEqual(oauth_token.key, twitter_token.key)
+        self.assertEqual(oauth_token.secret, twitter_token.secret)
+
 class TestOfTwitterUtils(TestCase):
     def test_create_new_user(self):
         twitter_info = {
@@ -140,3 +148,28 @@ class TestOfTwitterBackend(TestCase):
         self.assertEqual(user.twitter.key, 'key')
         self.assertEqual(user.twitter.secret, 'secret')
 
+
+    def test_authenticate(self):
+        mock_request = object()
+        class MockBackend(TwitterBackend):
+            def setup_api_and_token(_self, request):
+                self.assertEqual(request, mock_request)
+
+            def get_twitter_user(self):
+                user = create_new_user('200', 'chris dickinson')
+                twitter_token = TwitterToken.objects.create_new_twitter_token(user, '200', OAuthToken('key', 'secret'))
+                return twitter_token.user
+
+        class MockBackendThrows(MockBackend):
+            def get_twitter_user(self):
+                raise TwitterToken.DoesNotExist()
+
+        backend = MockBackend()
+        self.assertEqual(backend.authenticate(non_request=1), None)
+        user = backend.authenticate(request=mock_request)
+        self.assertTrue(isinstance(user, User)) 
+        self.assertEqual(user.twitter.key, 'key')
+        self.assertEqual(user.twitter.secret, 'secret')
+
+        backend = MockBackendThrows()
+        self.assertEqual(backend.authenticate(request=mock_request), None)
