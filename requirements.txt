@@ -1,4 +1,8 @@
 Django
 mox
+oauth
+httplib2
+simplejson
+-e git://github.com/tswicegood/httplib2-oauth.git#egg=httplib2-oauthclient
 -e git://github.com/sciyoshi/pyfacebook.git#egg=pyfacebook
 -e git://github.com/tswicegood/Dolt.git#egg=Dolt
