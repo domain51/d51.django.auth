@@ -9,8 +9,8 @@ TWITTER_SESSION_REDIRECT = 'redirect_to'
 
 def get_key_and_secret(settings=django_settings):
     return (
-        django_settings.D51_DJANGO_AUTH['TWITTER_CONSUMER_KEY'],
-        django_settings.D51_DJANGO_AUTH['TWITTER_CONSUMER_SECRET'],
+        settings.D51_DJANGO_AUTH['TWITTER_CONSUMER_KEY'],
+        settings.D51_DJANGO_AUTH['TWITTER_CONSUMER_SECRET'],
     )
 
 def get_configured_consumer():
