@@ -53,6 +53,6 @@ class TwitterBackend(AbstractModelAuthBackend):
             twitter_token = self.manager.get_uid(user_info['id'])
             twitter_token.update_from_oauth_token(self.token)
         except TwitterToken.DoesNotExist:
-            user = create_new_user(user_manager=self.user_manager, **user_info)
+            user = create_new_user(user_info['id'], user_info['name'], user_manager=self.user_manager)
             twitter_token = self.manager.create_new_twitter_token(user, user_info['id'], self.token)
         return twitter_token.user

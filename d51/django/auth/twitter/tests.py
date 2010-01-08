@@ -39,7 +39,7 @@ class TestOfTwitterUtils(TestCase):
     def test_create_new_user(self):
         twitter_info = {
             'name':'chris dickinson',
-            'id':'1010101',
+            'twitter_id':'1010101',
         }
         user = create_new_user(user_manager=User.objects, **twitter_info)
         self.assertTrue(isinstance(user, User))
