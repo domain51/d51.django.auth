@@ -8,7 +8,7 @@ Supported Authentication Methods
 --------------------------------
 * Email-Only (TODO)
 * Facebook Connect
-* Twitter OAuth (not-yet implemented)
+* Twitter OAuth
 
 ### Email-Only
 *TODO: Carry this over from the old repository*
@@ -45,10 +45,36 @@ addition to the email only backend:
         'd51.django.auth.facebook.backends.FacebookConnectBackend',
     )
 
+You will also have to add this app to your installed apps, and run migrations.
+
+    INSTALLED_APPS = (
+            ... your installed apps ...
+            'd51.django.auth.facebook.models',
+    )
+
+Afterwards, run `./manage.py syncdb` (or `./manage.py migrate`, if south
+is installed). This provides the FacebookID helper model.
 
 ### Twitter OAuth
-*TODO*
+This adds a backend that will talk to Twitter OAuth to handle
+authentication. Add the following to your 'settings.py' file to switch to
+Twitter OAuth.
 
+    AUTHENTICATION_BACKENDS = (
+        'd51.django.auth.twitter.backends.TwitterBackend',
+    )
+
+You will also have to add this app to your installed apps, and run migrations.
+
+    INSTALLED_APPS = (
+            ... your installed apps ...
+            'd51.django.auth.twitter.models',
+    )
+
+Afterwards, run `./manage.py syncdb` (or `./manage.py migrate`, if south
+is installed). This provides the TwitterToken helper model, which can be used
+in conjunction with the `d51.django.auth.twitter.utils` functions to obtain
+authenticated API access to Twitter.
 
 Installation
 ------------
