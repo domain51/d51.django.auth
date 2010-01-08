@@ -26,9 +26,9 @@ def get_twitter_api(http):
     http.add_credentials(http.consumer, http.token, 'twitter.com')
     return DoltTwitter(http)
 
-def create_new_user(id, name, user_manager=User.objects, *args, **kwargs):
-    username = 'tw$%s'%id
-    name = name.split(' ',1)+['']
+def create_new_user(twitter_id, name, user_manager=User.objects):
+    username = 'tw$%s'%twitter_id
+    name = name.split(' ',1)+['']           # ensure that the length of the resultant array is always at least 2
     return user_manager.create(
                 username=username,
                 first_name=name[0],
