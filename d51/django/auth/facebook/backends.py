@@ -13,8 +13,20 @@ class FacebookConnectBackend(AbstractModelAuthBackend):
             return
 
         request = kwargs['request']
-        if not request.facebook.check_session(request):
-            return
+        try:
+            if not request.facebook.check_session(request):
+                return
+        except ValueError, e:
+            # There is a [possible situation][bug] in PyFacebook that causes
+            # the "expires" value to be equal to 'None', which causes this
+            # exception.  This catches it and returns empty, essentially saying
+            # "we're not logged in."
+            #
+            # [bug]: http://github.com/sciyoshi/pyfacebook/issues/#issue/26
+            if str(e) == "invalid literal for int() with base 10: 'None'":
+                return
+            raise e
+
 
         try:
             user = self.manager.get_uid(request.facebook.uid).user
