@@ -258,4 +258,50 @@ class TestOfFacebookConnectBackend(TestCase):
 
         verify_all(user, user_manager, req, facebook, facebook.users, fb_id, fb_manager)
 
+class TestOfPyFacebook(TestCase):
+    def validate_signature_return(self):
+        return {
+            "in_canvas": "0",
+            "in_iframe": "0",
+            "in_profile_tab": "0",
+            "added": "0",
+            "expires": "123",
+        }
+
+    def test_can_handle_pyfacebook_error_on_none_expires(self):
+        # setup partial mock on check_session()
+        request = mox.MockObject(HttpRequest)
+        request.method = "GET"
+        request.GET = {}
+        request.POST = {}
+        facebook = Facebook('foo', 'bar', 'baz')
+        request.facebook = facebook
+
+        def mock_validate_signature(*args, **kwargs):
+            ret = self.validate_signature_return()
+            ret['expires'] = 'None'
+            return ret
+        facebook.validate_signature = mock_validate_signature
+
+        replay_all(request)
+
+        auth = FacebookConnectBackend()
+        self.assertEqual(None, auth.authenticate(request=request))
+
+    def test_still_throws_an_exception_on_unanticipated_exceptions(self):
+        request = mox.MockObject(HttpRequest)
+        request.method = 'GET'
+        request.GET = {}
+        request.POST = {}
+        request.facebook = Facebook('foo', 'bar', 'baz')
+
+        def mock_validate_signature(*args, **kwargs):
+            ret = self.validate_signature_return()
+            ret['expires'] = 'some-random-number-%d' % random(100, 200)
+            return ret
+        request.facebook.validate_signature = mock_validate_signature
+        replay_all(request)
+
+        auth = FacebookConnectBackend()
+        self.assertRaises(ValueError, auth.authenticate, request=request)
 
