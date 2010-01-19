@@ -1,8 +1,9 @@
 from d51.django.auth.backends import AbstractModelAuthBackend 
+from d51.django.auth.twitter import utils
 from django.conf import settings as django_settings
 from django.contrib.auth.models import User
 from .models import TwitterToken
-from .utils import TWITTER_SESSION_KEY, get_twitter_http, get_twitter_api, create_new_user
+from .utils import TWITTER_SESSION_KEY, get_twitter_api, create_new_user, get_http_client
 
 TWITTER_BACKEND_STRING = 'd51.django.auth.facebook.backends.TwitterBackend'
 
@@ -17,34 +18,26 @@ class TwitterBackend(AbstractModelAuthBackend):
             return
 
         user = None
-        try:
-            self.setup_api_and_token(request)
-            user = self.get_twitter_user()
-        except Exception as e:
-            user = None 
+        self.setup_api_and_token(request)
+        user = self.get_twitter_user()
         return user
 
-    def get_http(self):
-        return get_twitter_http()
+    def get_http(self, consumer=None, token=None):
+        return get_twitter_http(consumer=consumer, token=token)
     
-    def get_api(self, authorized_http):
-        return get_twitter_api(authorized_http)
+    def get_api(self, consumer=None, token=None):
+        return get_twitter_api(consumer=consumer, token=token)
 
     def get_request_token(self, request):
         request_token = request.session.get(TWITTER_SESSION_KEY, None)
         return request_token
 
-    def authorize_http(self, http, request_token):
-        http.token = request_token
-        access_token = http.fetch_access_token()
-        http.token = access_token
-        return http
+    def fetch_access_token(self, request):
+        return utils.fetch_access_token(get_request_token(request), request.GET['oauth_token'])
 
-    def setup_api_and_token(self, request):
+    def setup_api_and_token(self, request, consumer=None, token=None):
         request_token = self.get_request_token(request)
-        http = self.get_http()
-        http = self.authorize_http(http, request_token)
-        self.api, self.token = self.get_api(http), http.token    
+        self.api, self.token = self.get_api(consumer=consumer, token=token), token    
 
     def get_twitter_user(self):
         user_info = self.api.account.verify_credentials()

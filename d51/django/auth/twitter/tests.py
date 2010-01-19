@@ -8,7 +8,7 @@ from dolt import Dolt
 from random import randint as random
 from .utils import TWITTER_SESSION_KEY, TWITTER_SESSION_REDIRECT, TwitterHttp, create_new_user
 from .models import TwitterToken
-from oauth.oauth import OAuthToken
+import oauth2
 
 class TestOfTwitterViews(TestCase):
     def setUp(self):
@@ -31,7 +31,7 @@ class TestOfTwitterModels(TestCase):
     def test_get_oauth_token(self):
         twitter_token = TwitterToken.objects.create(user=create_new_user('100', 'chris dickinson'), key='key', secret='secret', uid='100')
         oauth_token = twitter_token.get_oauth_token()
-        self.assertTrue(isinstance(oauth_token, OAuthToken))
+        self.assertTrue(isinstance(oauth_token, oauth2.Token))
         self.assertEqual(oauth_token.key, twitter_token.key)
         self.assertEqual(oauth_token.secret, twitter_token.secret)
 
@@ -73,40 +73,24 @@ class TestOfTwitterBackend(TestCase):
         fake_backend = FakeBackend()
         self.assertEqual(fake_backend.setup_api_and_token(bad_request), None)
 
-        good_request = bad_request; good_request.session[TWITTER_SESSION_KEY] = OAuthToken('key', 'secret')
+        good_request = bad_request; good_request.session[TWITTER_SESSION_KEY] = oauth2.Token('key', 'secret')
         fake_backend.setup_api_and_token(good_request)
-        dolt, token = fake_backend.api, fake_backend.token
+        dolt = fake_backend.api
  
         self.assertTrue(isinstance(dolt, Dolt))
-        self.assertTrue(isinstance(token, OAuthToken))
-        self.assertTrue(triggers['fetch_access_token'])
-        self.assertTrue(triggers['add_credentials'])
 
     def test_get_api(self):
         triggers = { 'add_credentials': False }
         class MockHttp(object):
             consumer = None
             token = None
-            def add_credentials(self, *args, **kwargs):
-                triggers['add_credentials'] = True
         http = MockHttp()
         backend = TwitterBackend()
-        self.assertTrue(isinstance(backend.get_api(http), Dolt))
-        self.assertTrue(triggers['add_credentials'])
-
-    def test_authorize_http(self):
-        class MockHttp(object):
-            def fetch_access_token(self):
-                return self.token + '-fetched' 
-        backend = TwitterBackend()
-        http = MockHttp()
-        token = 'token'
-        http_out = backend.authorize_http(http, token)
-        self.assertEqual(http_out.token, 'token-fetched')
+        self.assertTrue(isinstance(backend.get_api(), Dolt))
 
     def test_get_existing_twitter_user(self):
         user = create_new_user('101', 'chris dickinson')
-        twitter_token = TwitterToken.objects.create_new_twitter_token(user, '101', OAuthToken('key', 'secret'))
+        twitter_token = TwitterToken.objects.create_new_twitter_token(user, '101', oauth2.Token('key', 'secret'))
         class MockDolt(object):
             def __getattr__(self, what):
                 return self
@@ -118,7 +102,7 @@ class TestOfTwitterBackend(TestCase):
                 }
         class MockBackend(TwitterBackend):
             api = MockDolt()
-            token = OAuthToken('new-key', 'new-secret')
+            token = oauth2.Token('new-key', 'new-secret')
 
         backend = MockBackend()
         user_from_backend = backend.get_twitter_user()
@@ -137,7 +121,7 @@ class TestOfTwitterBackend(TestCase):
                 }
         class MockBackend(TwitterBackend):
             api = MockDolt()
-            token = OAuthToken('key', 'secret')
+            token = oauth2.Token('key', 'secret')
 
         backend = MockBackend()
         user = backend.get_twitter_user()
@@ -157,7 +141,7 @@ class TestOfTwitterBackend(TestCase):
 
             def get_twitter_user(self):
                 user = create_new_user('200', 'chris dickinson')
-                twitter_token = TwitterToken.objects.create_new_twitter_token(user, '200', OAuthToken('key', 'secret'))
+                twitter_token = TwitterToken.objects.create_new_twitter_token(user, '200', oauth2.Token('key', 'secret'))
                 return twitter_token.user
 
         class MockBackendThrows(MockBackend):
@@ -172,4 +156,4 @@ class TestOfTwitterBackend(TestCase):
         self.assertEqual(user.twitter.secret, 'secret')
 
         backend = MockBackendThrows()
-        self.assertEqual(backend.authenticate(request=mock_request), None)
+        self.assertRaises(TwitterToken.DoesNotExist, backend.authenticate, request=mock_request)
