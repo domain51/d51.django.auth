@@ -1,12 +1,17 @@
-from django.conf import settings
-from django.conf.urls.defaults import patterns, include, handler500
-from django.core.management import call_command
-import ConfigParser, os, sys
+import sys, os, ConfigParser
+try:
+    from d51.django.virtualenv.test_runner import run_tests
+except ImportError:
+    print "Please install d51.django.virtualenv.test_runner to run these tests"
 
-handler500
-urlpatterns = patterns('',
-    (r'^twitter/', include('d51.django.auth.twitter.urls')),
-)
+
+def setUp():
+    from django.conf.urls.defaults import patterns, include, handler500
+    sys.modules[setUp.__module__].handler500 = handler500
+    sys.modules[setUp.__module__].urlpatterns = patterns('',
+        (r'^twitter/', include('d51.django.auth.twitter.urls')),
+    )
+
 
 def main():
     # Check to see that ~/.d51.django.auth.test.settings file is available
@@ -27,32 +32,27 @@ TWITTER_CONSUMER_SECRET = <your consumer secret>
     config = ConfigParser.RawConfigParser()
     config.read(settings_file)
 
-    # Dynamically configure the Django settings with the minimum necessary to
-    # get Django running tests
-    settings.configure(
-        INSTALLED_APPS=(
+    settings = {
+        "INSTALLED_APPS": (
             'django.contrib.contenttypes',
             'django.contrib.sessions',
             'd51.django.auth',
             'd51.django.auth.facebook',
             'd51.django.auth.twitter',
         ),
-        # Django replaces all of this, but it still wants it. *shrugs*
-        DATABASE_ENGINE='sqlite3',
 
         # Make this the urls.py and include the necessary patterns here
-        ROOT_URLCONF='run_tests',
+        'ROOT_URLCONF': '__main__',
 
         # Necessary configuration for d51.django.auth
-        D51_DJANGO_AUTH = {
+        'D51_DJANGO_AUTH': {
             'TWITTER_CONSUMER_KEY': config.get('settings', 'TWITTER_CONSUMER_KEY'),
             'TWITTER_CONSUMER_SECRET': config.get('settings', 'TWITTER_CONSUMER_SECRET'),
         },
 
-    )
-
-    # Fire off the tests
-    call_command('test', 'auth')
+    }
+    run_tests(settings, 'auth')
 
 if __name__ == '__main__':
     main()
+
