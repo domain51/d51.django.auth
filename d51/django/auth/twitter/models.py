@@ -5,6 +5,7 @@ from .managers import TwitterTokenManager
 import oauth2
 
 class TwitterToken(models.Model):
+    # TODO: This should be CharField to avoid the FB issue we had
     uid = models.PositiveIntegerField(primary_key=True)
     user = models.OneToOneField(User, related_name='twitter')
     key = models.CharField(max_length=100)
