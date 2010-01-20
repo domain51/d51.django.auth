@@ -7,8 +7,8 @@ class TwitterTokenManager(models.Manager):
 
     def create_new_twitter_token(self, user, id, token):
         return self.create(
-                uid=int(id),
-                user=user,
-                key=token.key,
-                secret=token.secret
+            uid=int(id),
+            user=user,
+            key=token.key,
+            secret=token.secret
         )
