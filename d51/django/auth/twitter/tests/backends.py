@@ -1,52 +1,12 @@
-from django.test import TestCase
-from django.test.client import Client
-from django.contrib.auth.models import User, UNUSABLE_PASSWORD
 from django.conf import settings
-from django.core.urlresolvers import reverse
+from django.contrib.auth.models import User, UNUSABLE_PASSWORD
+from django.test import TestCase
 from d51.django.auth.twitter.backends import TwitterBackend
 from dolt import Dolt
 from random import randint as random
-from .utils import TWITTER_SESSION_KEY, TWITTER_SESSION_REDIRECT, TwitterHttp, create_new_user
-from .models import TwitterToken
+from d51.django.auth.twitter.utils import TWITTER_SESSION_KEY, TWITTER_SESSION_REDIRECT, TwitterHttp, create_new_user
+from d51.django.auth.twitter.models import TwitterToken
 import oauth2
-
-class TestOfTwitterViews(TestCase):
-    def setUp(self):
-        self.initial_login_url = reverse('d51.django.auth.twitter.views.initiate_login')
-
-    def test_redirects_to_twitter_for_authentication(self):
-        c = Client()
-        res = c.post(self.initial_login_url)
-        self.assertNotEqual("", c.session[TWITTER_SESSION_KEY])
-
-        redirect_url = res._headers['location'][1]
-        expected_url = "http://twitter.com/oauth/authorize"
-        self.assertEqual(
-            redirect_url[0:len(expected_url)],
-            expected_url,
-            "should redirect to %s" % expected_url
-        )
-
-class TestOfTwitterModels(TestCase):
-    def test_get_oauth_token(self):
-        twitter_token = TwitterToken.objects.create(user=create_new_user('100', 'chris dickinson'), key='key', secret='secret', uid='100')
-        oauth_token = twitter_token.get_oauth_token()
-        self.assertTrue(isinstance(oauth_token, oauth2.Token))
-        self.assertEqual(oauth_token.key, twitter_token.key)
-        self.assertEqual(oauth_token.secret, twitter_token.secret)
-
-class TestOfTwitterUtils(TestCase):
-    def test_create_new_user(self):
-        twitter_info = {
-            'name':'chris dickinson',
-            'twitter_id':'1010101',
-        }
-        user = create_new_user(user_manager=User.objects, **twitter_info)
-        self.assertTrue(isinstance(user, User))
-        self.assertEqual(user.password, UNUSABLE_PASSWORD)
-        self.assertEqual(user.first_name, 'chris')
-        self.assertEqual(user.last_name, 'dickinson')
-        self.assertTrue(user.username.startswith('tw$'))
 
 class TestOfTwitterBackend(TestCase):
     def test_setup_api_and_token(self):
