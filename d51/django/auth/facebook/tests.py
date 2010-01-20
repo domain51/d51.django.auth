@@ -27,7 +27,7 @@ class TestOfFacebookID(TestCase):
         self.assert_(isinstance(FacebookID.objects, FacebookIDManager))
 
     def test_has_get_uid_method(self):
-        random_id = random(10, 1000)
+        random_id = str(random(10, 1000))
         user = User.objects.create(username="foobar")
         obj = FacebookID.objects.create(pk=random_id, user=user)
 
