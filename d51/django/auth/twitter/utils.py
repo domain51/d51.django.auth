@@ -7,6 +7,16 @@ import oauth2
 TWITTER_SESSION_KEY = 'twitter_request_token'
 TWITTER_SESSION_REDIRECT = 'redirect_to'
 
+URLS = {
+    'authorize': 'https://twitter.com/oauth/authorize?oauth_token=%s',
+}
+
+
+def get_request_token(request):
+    # TODO: handle lack of SESSION value
+    return request.session.get(TWITTER_SESSION_KEY)
+
+
 def fetch_request_token():
     http = get_http_client()
     request_token_url = 'https://twitter.com/oauth/request_token'
@@ -14,8 +24,21 @@ def fetch_request_token():
     request_token = oauth2.Token.from_string(body)
     return request_token
 
+def build_authorization_url(token):
+    return URLS['authorize'] % token.key
+
 def fetch_access_token(request_token, oauth_token):
-    access_token_url = "http://twitter.com/oauth/access_token"
+    """
+    Retrieve a usable access token from Twitter.
+
+    The `request_token` is the original token retrieved from the first call to
+    `fetch_access_token()`.  It is generally stored in the request session.
+
+    The `oauth_token` is provided as a GET parameter when Twitter makes does
+    its callback after a successful authentication.
+    """
+    # TODO: refactor to use Dolt once Dolt can parse the response
+    access_token_url = "https://twitter.com/oauth/access_token"
     http = get_http_client(token=request_token)
     (resp, body) = http.request(access_token_url, 'POST', 'oauth_token=%s' % oauth_token)
     return oauth2.Token.from_string(body)
