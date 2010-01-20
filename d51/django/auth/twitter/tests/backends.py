@@ -1,13 +1,9 @@
-from django.conf import settings
-from django.contrib.auth.models import User, UserManager, UNUSABLE_PASSWORD
-from d51.django.auth.twitter.backends import TwitterBackend
-from dolt import Dolt
-import random
 from d51.django.auth.twitter import managers, models, utils
-from d51.django.auth.twitter.utils import TWITTER_SESSION_KEY, TWITTER_SESSION_REDIRECT, TwitterHttp, create_new_user
-from d51.django.auth.twitter.models import TwitterToken
+from d51.django.auth.twitter.backends import TwitterBackend
 from d51.django.auth.twitter.tests.base import TestCase
-import oauth2
+from django.conf import settings
+from django.contrib.auth.models import User, UserManager
+import oauth2, random
 
 # These classes are for Mox
 class MockTwitterAccount(object):
@@ -32,7 +28,7 @@ class TestOfTwitterBackend(TestCase):
 
         user = self.mox.CreateMock(User)
         manager = self.mox.CreateMock(managers.TwitterTokenManager)
-        manager.get_uid(random_user_id).AndRaise(TwitterToken.DoesNotExist)
+        manager.get_uid(random_user_id).AndRaise(models.TwitterToken.DoesNotExist)
 
         user_manager = self.mox.CreateMock(UserManager)
 
