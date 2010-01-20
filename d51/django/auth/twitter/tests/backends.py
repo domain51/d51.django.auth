@@ -93,6 +93,10 @@ class TestOfTwitterBackend(TestCase):
         self.assertEqual(user.twitter.secret, 'secret')
 
 
+    def test_authenticate_returns_none_if_not_supplied_a_request(self):
+        backend = TwitterBackend()
+        self.assertEqual(None, backend.authenticate())
+
     def test_authenticate(self):
         mock_request = object()
         class MockBackend(TwitterBackend):
