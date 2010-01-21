@@ -54,7 +54,7 @@ def get_configured_consumer():
     return oauth2.Consumer(*get_key_and_secret())
 
 def get_http_client(consumer=None, token=None):
-    consumer = consumer and consumer or get_configured_consumer()
+    consumer = consumer if consumer else get_configured_consumer()
     return oauth2.Client(consumer, token)
     
 def get_twitter_api(consumer=None, token=None):
