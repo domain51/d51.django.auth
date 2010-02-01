@@ -16,10 +16,13 @@ class TwitterBackend(AbstractModelAuthBackend):
         request = credentials.get('request', None)
         if request is None:
             return
+        oauth_token_from_request = request.GET.get('oauth_token', None)
+        if oauth_token_from_request is None:
+            return
 
         request_token = self.utils.get_request_token(request)
 
-        access_token = self.utils.fetch_access_token(request_token, request.GET.get('oauth_token'))
+        access_token = self.utils.fetch_access_token(request_token, oauth_token_from_request)
 
         twitter = self.utils.get_twitter_api(token=access_token)
         user_info = twitter.account.verify_credentials()
@@ -27,7 +30,8 @@ class TwitterBackend(AbstractModelAuthBackend):
             twitter_token = self.manager.get_uid(user_info['id'])
             twitter_token.update_from_oauth_token(access_token)
         except TwitterToken.DoesNotExist:
-            user = self.utils.create_new_user(user_info['id'], user_info['name'], user_manager=self.user_manager)
+            user = request.user
+            user = user if user.is_authenticated() else self.utils.create_new_user(user_info['id'], user_info['name'], user_manager=self.user_manager)
             twitter_token = self.manager.create_new_twitter_token(user, user_info['id'], access_token)
  
         return twitter_token.user
