@@ -4,7 +4,7 @@ from django.conf import settings as django_settings
 from django.contrib.auth.models import User
 from .models import TwitterToken
 
-TWITTER_BACKEND_STRING = 'd51.django.auth.facebook.backends.TwitterBackend'
+TWITTER_BACKEND_STRING = 'd51.django.auth.twitter.backends.TwitterBackend'
 
 class TwitterBackend(AbstractModelAuthBackend):
     def __init__(self, manager=TwitterToken.objects, utils=utils, settings=django_settings, *args, **kwargs):
