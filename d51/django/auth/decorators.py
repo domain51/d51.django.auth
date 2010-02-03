@@ -6,6 +6,8 @@ from django.shortcuts import redirect
 # it gets to d51.django.auth.facebook.
 from .. facebook import FacebookError
 from facebook.models import FacebookID
+from django.contrib.auth import BACKEND_SESSION_KEY
+from facebook.backends import FACEBOOK_CONNECT_BACKEND_STRING
 
 def _do_logout_redirect(redirect_to):
     response = redirect('d51.django.auth.facebook.views.logout')
@@ -15,7 +17,7 @@ def _do_logout_redirect(redirect_to):
 def is_fully_authenticated(request):
     if not request.user.is_active or not request.user.is_authenticated():
         return False
-    elif is_facebook_user(request.user):
+    elif is_facebook_user(request.user) and request.session.get(BACKEND_SESSION_KEY, None) == FACEBOOK_CONNECT_BACKEND_STRING:
         try:
             if not request.facebook.check_session(request):
                 return False
