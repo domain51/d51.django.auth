@@ -1,6 +1,6 @@
 import cgi
 from django.conf import settings as django_settings
-from dolt.apis.twitter import Twitter as TwitterHttp
+from dolt.apis.twitter import Twitter
 from django.contrib.auth.models import User, UNUSABLE_PASSWORD
 import oauth2
 
@@ -58,7 +58,7 @@ def get_http_client(consumer=None, token=None):
     return oauth2.Client(consumer, token)
     
 def get_twitter_api(consumer=None, token=None):
-    return TwitterHttp(get_http_client(consumer=consumer, token=token))
+    return Twitter(get_http_client(consumer=consumer, token=token))
 
 def create_new_user(twitter_id, name, user_manager=User.objects):
     username = 'tw$%s'%twitter_id
